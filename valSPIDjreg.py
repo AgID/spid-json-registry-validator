@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ##########################################################
-#  valSPIDjreg 0.1                                       #
+#  valSPIDjreg 0.3                                       #
 #--------------------------------------------------------#
 #   Validates SPID's new registry JSON-based entries     #
 #--------------------------------------------------------#
-#    GNU (GPL) 2019 Walter Arrighetti, PhD, CISSP        #
+#    GNU (GPL) 2019 Walter Arrighetti, PhD, CISSP, CCSP  #
 #    coding by: Walter Arrighetti                        #
 #               <walter.arrighetti@agid.gov.it>          #
 #  < https://github.com/AgID/valSPIDjsonreg >  #
@@ -20,7 +20,7 @@ import re
 SPIDregistry_URLbase = "https://registry.spid.gov.it/metadata/sp/spid-sp-"
 _entities = ['ipaEntityCode','entityName','entityId','metadataUrl','metadataType','notes']
 
-__VERSION = "0.1"
+__VERSION = "0.3"
 
 
 def create_secondary_registry(registry, pathname):
@@ -36,6 +36,25 @@ def create_secondary_registry(registry, pathname):
 	mdfile.write(json.dumps( {'agidSpid':mdR}) )
 	mdfile.close()
 	return mdR
+
+
+def generate_PgSQL_query(entry):
+	Qbase = 'INSERT INTO "configurazioni" ("codice_entita", "entityid", "tipologia", "data_invio", "valutazione", "data_notifica_idp", "note", "url", "status") VALUES ('
+	Q = []
+	for n in range(entry['totalRecords']):
+		Q.append( Qbase + "'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"%(
+			entry['metadata'][n]['ipaEntityCode'], 
+			entry['metadata'][n]['entityId'], 
+			"SAML", 
+			entry['dateTime'][:11], 
+			"CCOR", 
+			entry['dateTime'][:11], 
+			entry['metadata'][n]['notes'], 
+			entry['metadata'][n]['metadataUrl'], 
+			entry['metadata'][n]['metadataType'], 
+			))
+		print(Q[-1] + '\n')
+	return Q
 
 
 def parse_files(pathname):
@@ -101,6 +120,11 @@ def parse_files(pathname):
 			elif reg:
 				if md0['metadata'][n][entity]!=mdR['metadata'][n][entity]:
 					print("[***]\tMetadata entry #%d's '%s' element in both JSON files should match with each other."%(n+1,entity));	err0+=1;	errR+=1
+			if entity == 'metadataType':
+				if md0['metadata'][n][entity] not in ["prod","test","to_delete"]:
+					print("[ SP]\tMetadata entry #%d's 'metadataType' must be either \"prod\" or \"test\"."%(n+1));	err0+=1
+				if reg and mdR['metadata'][n][entity] not in ["prod","test","to_delete"]:
+					print("[reg]\tMetadata entry #%d's 'metadataType' must be either \"prod\" or \"test\"."%(n+1));	errR+=1
 			if entity == 'entityId':
 				if not URLre.match(md0['metadata'][n][entity]):
 					print("[ SP]\tMetadata entry #%d's 'entityId' element should be a valid https URL."%(n+1))
@@ -112,6 +136,8 @@ def parse_files(pathname):
 	if err0:	print("\n%d errors on registry-entries file (with SP-based URL) \"%s\"."%(err0,filename))
 	if errR:	print("\n%d errors on registry-entries file (with registry-based URL) \"%s\"."%(errR,namereg+ext))
 	if err0==errR==0:	print("No errors in either JSON registry entry files !")
+	if not errR:	return mdR
+	else:	sys.exit(1)
 
 def main():
 	def print_args():
@@ -125,7 +151,9 @@ def main():
 	print("valSPIDjreg %s - Checks the validity of SPID registry-entry JSON-based metadata files"%__VERSION)
 	print("GNU (GPL) 2019 by Walter Arrighetti  <walter.arrighetti@agid.gov.it>\n")
 	if len(sys.argv) != 2:	print_args()
-	parse_files(sys.argv[1])
+	entries = parse_files(sys.argv[1])
+	print("\nInserimento elementi nel database PostgreSQL:\n")
+	generate_PgSQL_query(entries)
 	sys.exit(0)
 
 

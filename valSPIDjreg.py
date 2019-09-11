@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ##########################################################
-#  valSPIDjreg 0.3                                       #
+#  valSPIDjreg 0.4                                       #
 #--------------------------------------------------------#
 #   Validates SPID's new registry JSON-based entries     #
 #--------------------------------------------------------#
@@ -20,7 +20,7 @@ import re
 SPIDregistry_URLbase = "https://registry.spid.gov.it/metadata/sp/spid-sp-"
 _entities = ['ipaEntityCode','entityName','entityId','metadataUrl','metadataType','notes']
 
-__VERSION = "0.3"
+__VERSION = "0.4"
 
 
 def create_secondary_registry(registry, pathname):
@@ -141,18 +141,14 @@ def parse_files(pathname):
 
 def main():
 	def print_args():
-		print(" Syntax:  %s  emetti | fornitore | inizializza"%os.path.basename(sys.argv[0]))
-		print("\t\temetti       Crea fattura generica verso fornitore esistente")
-		print("\t\tconsulenza       \"\"   di consulenza a fornitore (UE / extra-UE)")
-		print("\t\tcommittente  Aggiunge un fornitore (UE / extra-UE) al database")
-		print("\t\tinizializza  Inizializza un nuovo database con i tuoi dati")
+		print(" Syntax:  %s  SPentriesFile.json  [registryEntriesFile.json]"%os.path.basename(sys.argv[0]))
 		print('\n')
 		sys.exit(9)
-	print("valSPIDjreg %s - Checks the validity of SPID registry-entry JSON-based metadata files"%__VERSION)
+	print("valSPIDjreg %s - Checks the validity of SPID's SP metadata JSON-based metadata files"%__VERSION)
 	print("GNU (GPL) 2019 by Walter Arrighetti  <walter.arrighetti@agid.gov.it>\n")
 	if len(sys.argv) != 2:	print_args()
 	entries = parse_files(sys.argv[1])
-	print("\nInserimento elementi nel database PostgreSQL:\n")
+	print("\nInsert new elements into the PostgreSQL internal database:\n")
 	generate_PgSQL_query(entries)
 	sys.exit(0)
 

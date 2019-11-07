@@ -39,19 +39,20 @@ def create_secondary_registry(registry, pathname):
 
 
 def generate_PgSQL_query(entry):
-	Qbase = 'INSERT INTO "configurazioni" ("codice_entita", "entityid", "tipologia", "data_invio", "valutazione", "data_notifica_idp", "note", "url", "status") VALUES ('
+	Qbase = 'INSERT INTO "metadata" ("organization", "entity_id", "url", "registry_url", "typology", "in_date", "assessment", "out_date", "status", "notes") VALUES ('
+        
 	Q = []
 	for n in range(entry['totalRecords']):
-		Q.append( Qbase + "'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"%(
-			entry['metadata'][n]['ipaEntityCode'], 
+		Q.append( Qbase + "'%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s');"%(
+			"(SELECT id FROM organization WHERE code=" + entry['metadata'][n]['ipaEntityCode'] + ")", 
 			entry['metadata'][n]['entityId'], 
+			entry['metadata'][n]['metadataUrl'], 
 			"SAML", 
 			entry['dateTime'][:11], 
 			"CCOR", 
 			entry['dateTime'][:11], 
-			entry['metadata'][n]['notes'], 
-			entry['metadata'][n]['metadataUrl'], 
 			entry['metadata'][n]['metadataType'], 
+			entry['metadata'][n]['notes']
 			))
 		print(Q[-1] + '\n')
 	return Q
